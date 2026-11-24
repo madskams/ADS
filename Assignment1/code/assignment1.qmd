@@ -13,6 +13,9 @@ format:
 
 ```{r setup, message=FALSE, warning=FALSE}
 library(tidyverse)
+library(here)
+
+raw_data <- read.csv(here("data", "icosw3e02_0.csv"))
 
 
 
