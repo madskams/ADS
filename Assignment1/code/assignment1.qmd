@@ -15,7 +15,44 @@ format:
 library(tidyverse)
 library(here)
 
-raw_data <- read.csv(here("data", "icosw3e02_0.csv"))
+
+dataDir <- "data"
+figDir <- "figure"
+
+recodeMissing <- function(x, missCode = 99) {
+  ifelse(x == missCode, NA, x)
+}
+
+rawData <- read.csv(here("data", "icosw3e02_0.csv"))
+
+# Select relevant variables and transform them using a pipeline
+cleanData <- rawData |>
+  select(
+    yearsCity = w3livedig,     # Outcome (continuous): years lived in the city
+    city      = city,          # Predictor 1 (categorical): Munich or Paris
+    bornCntr  = w3brncntr,     # Predictor 2 (categorical): born in country (1 = Yes, 2 = No)
+    eduYears  = w3eduyrs,      # Predictor 3 (continuous): years of full-time education
+    birthYear = w3yrbrn,       # Year of birth (to be converted to age)
+    evalTran  = w3evaltran,    # Predictor 5 (0-10 scale): satisfaction with public transport
+    airQual   = w3airqual,     # Predictor 6 (0-10 scale): satisfaction with air quality
+    trustMun  = w3trstplt_ic   # Predictor 7 (0-10 scale): trust in municipality/politicians
+  ) |>
+  mutate(
+    # Apply custom function across variables where 99 represents a missing value
+    across(c(yearsCity, eduYears, evalTran, airQual, trustMun), recodeMissing, missCode = 99),
+    # Recode 9999 to NA for year of birth and compute age in 2024
+    birthYear = recodeMissing(birthYear, missCode = 9999),
+    age       = 2024 - birthYear,
+    # Convert categorical predictors into labeled factors
+    city      = factor(city),
+    bornCntr  = factor(bornCntr, levels = c(1, 2), labels = c("Yes", "No"))
+  ) |>
+  select(-birthYear) |>  # Remove raw birth year column
+  na.omit()              # Keep complete cases only
+
+# Inspect structure and summary statistics of the cleaned dataset
+str(cleanData)
+summary(cleanData)
 
 
 
